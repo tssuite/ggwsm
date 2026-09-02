@@ -24,3 +24,7 @@ pubspec.lock
 
 tsconfig.json
 
+
+# Instantiated by the DNA (helix) — edit the DNA layer, not these files.
+doc/guides/
+doc/templates/

@@ -53,6 +53,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "@tssuite/dna-tssuite": "^0.1.1",
+    "@tssuite/helix-js": "^0.1.0",
     "@types/node": "^26.2.0",
     "@vitest/browser": "^4.1.10",
     "@vitest/browser-playwright": "^4.1.10",
