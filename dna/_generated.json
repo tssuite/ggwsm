@@ -103,7 +103,7 @@
       "ecosystem": null,
       "resolvedVersion": null,
       "via": null,
-      "hash": "0x32b3537fa5495175"
+      "hash": "0xd828117601898f0a"
     }
   ],
   "claude": {
@@ -182,7 +182,7 @@
     },
     {
       "path": ".github/workflows/quick_check.yaml",
-      "hash": "0xf3320fb8f530a565"
+      "hash": "0x61a5e3726d5c1b3c"
     },
     {
       "path": ".vscode/extensions.json",
