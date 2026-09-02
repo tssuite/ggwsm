@@ -1,0 +1,30 @@
+# Runs the gg quick check on every push and pull request against main.
+#
+# Overrides the dna_gg template for this repo: the template runs
+# `npx @tssuite/ggwsm ...`, which is a self-reference here — npx sees the
+# own package name in package.json, picks the local bin `dist/ggwsm.mjs`,
+# which a fresh checkout does not have, and fails with
+# `sh: 1: ggwsm: not found`. `pnpm dlx` always fetches the published CLI
+# from the registry and therefore works in this repo too.
+
+name: Tests
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+jobs:
+  build:
+    name: Quick Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable pnpm
+
+      # Uses the Node.js preinstalled on the runner image.
+      - run: pnpm dlx @tssuite/ggwsm one did commit

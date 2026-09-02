@@ -1,3 +1,5 @@
 allowBuilds:
   esbuild: true
   msw: true
+minimumReleaseAgeExclude:
+  - '@tssuite/helix-js@0.1.0'

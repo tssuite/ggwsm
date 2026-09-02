@@ -10,14 +10,16 @@
 // the tests read like a `dart:io` conformance suite: the same operations,
 // against a real temp directory, with the same expectations.
 
+import { ChildProcess } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
-    createNodeHost, needsShell, nodePlatformToDart, outcomeExitCode,
-    readLineFrom, resolveExecutable, spawnCommand
+    createNodeHost, needsShell, NodeStartedProcess, nodePlatformToDart,
+    outcomeExitCode, readLineFrom, resolveExecutable, spawnCommand
 } from '../host-node.js';
 import { EntityType, GgHost, StartedProcess } from '../host.js';
 
@@ -625,6 +627,25 @@ describe('createNodeHost()', () => {
       );
 
       expect((await collect(started)).code).toBe(127);
+    });
+
+    test('keeps the first exit code when close and error both fire', () => {
+      // A real child normally reports one terminal event. Node makes no
+      // promise about that, so the wrapper guards against a second one
+      // overwriting the code gg already saw.
+      const child = new EventEmitter();
+      const started = new NodeStartedProcess(
+        child as unknown as ChildProcess,
+        false,
+      );
+
+      const codes: number[] = [];
+      started.onExit((code) => codes.push(code));
+
+      child.emit('close', 3, null);
+      child.emit('error', new Error('after close'));
+
+      expect(codes).toEqual([3]);
     });
   });
 
