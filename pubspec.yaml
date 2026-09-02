@@ -1,6 +1,6 @@
 name: ggwsm
 description: Bridge from gg to ggwsm (WASM version of gg)
-version: 0.0.4
+version: 0.0.5
 repository: https://github.com/tssuite/ggwsm.git
 publish_to: none
 
