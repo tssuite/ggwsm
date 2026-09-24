@@ -40,10 +40,110 @@ const eraseBelow = '\x1b[0J';
 const hideCursor = '\x1b[?25l';
 /** Shows the cursor again. */
 const showCursor = '\x1b[?25h';
-/** Colours the marked entry, the way interact's list does. */
-const activeOn = '\x1b[36m';
 /** Switches the terminal back to its default colours. */
 const colorOff = '\x1b[0m';
+
+/**
+ * Wraps [text] in one colour and resets afterwards.
+ * @param code - The SGR code of the colour.
+ * @returns A function that colours its text.
+ */
+const colored =
+  (code: number) =>
+  (text: string): string =>
+    `\x1b[${code}m${text}${colorOff}`;
+
+// gg's prompt theme, the one native gg draws with interact: the question
+// is yellow, the cursor dark gray, the entry under it blue, every other
+// entry white.
+
+/** Colours a question. */
+const questionStyle = colored(33);
+/** Colours the entry under the cursor. */
+const activeStyle = colored(34);
+/** Colours every other entry. */
+const inactiveStyle = colored(37);
+/** The cursor in front of the marked entry. */
+const activePrefix = colored(90)('❯');
+
+/** Matches one SGR sequence and captures its parameters. */
+const sgrSequence = /\x1b\[([0-9;:]*)m/g;
+
+/** The codes that end an attribute, keyed by the code that starts it. */
+const attributeOff = new Map<number, number>([
+  [1, 22],
+  [2, 22],
+  [3, 23],
+  [4, 24],
+  [5, 25],
+  [7, 27],
+  [8, 28],
+  [9, 29],
+]);
+
+/**
+ * Whether [code] sets a foreground or background colour.
+ * @param code - The SGR code.
+ * @returns Whether it is a colour.
+ */
+function isColor(code: number): boolean {
+  return (
+    (code >= 30 && code <= 39) ||
+    (code >= 40 && code <= 49) ||
+    (code >= 90 && code <= 97) ||
+    (code >= 100 && code <= 107)
+  );
+}
+
+/**
+ * Removes the colours from [text] and keeps its other attributes.
+ *
+ * The colours belong to the theme, the way native gg's prompt theme owns
+ * them: a question or an entry that brings its own colour would drift
+ * from the scheme. Bold and underline survive — gg marks a command in an
+ * entry bold. A reset inside [text] would end the theme's colour along
+ * with everything else, so it only ends the attributes switched on before.
+ * @param text - The question or entry, as gg sent it.
+ * @returns The text without colours.
+ */
+export function uncolored(text: string): string {
+  const switchedOn = new Set<number>();
+
+  return text.replace(sgrSequence, (_match, group: string) => {
+    const parameters = group.split(';');
+    const kept: string[] = [];
+
+    for (let i = 0; i < parameters.length; i++) {
+      // A colon separates the sub-parameters of one parameter: 38:5:208.
+      const subParameters = parameters[i].split(':');
+      // An empty parameter means 0, the reset.
+      const code = Number.parseInt(subParameters[0], 10) || 0;
+
+      if (code === 0) {
+        for (const on of switchedOn) kept.push(`${attributeOff.get(on)}`);
+        switchedOn.clear();
+      } else if (isColor(code)) {
+        // 38;5;n and 38;2;r;g;b carry their colour in the parameters that
+        // follow, which must go with them.
+        if (subParameters.length === 1 && (code === 38 || code === 48)) {
+          const mode = parameters[i + 1];
+          i += mode === '5' ? 2 : mode === '2' ? 4 : 0;
+        }
+      } else {
+        kept.push(parameters[i]);
+        if (attributeOff.has(code)) {
+          switchedOn.add(code);
+        } else {
+          for (const on of switchedOn) {
+            if (attributeOff.get(on) === code) switchedOn.delete(on);
+          }
+        }
+      }
+    }
+
+    return kept.length === 0 ? '' : `\x1b[${kept.join(';')}m`;
+  });
+}
 
 /** Options for {@link createNodePrompts}. */
 export interface NodePromptOptions {
@@ -177,15 +277,17 @@ export async function chooseByArrows(
   let drawn = false;
 
   const render = (): void => {
-    if (drawn) write(cursorUp(choices.length + 1));
+    // The question can span lines — gg starts some with a blank line to
+    // set them off from the log above — and every one of them is redrawn.
+    if (drawn) write(cursorUp(prompt.split('\n').length + choices.length));
     drawn = true;
     write(eraseBelow);
-    write(`${prompt}\n`);
+    write(`${questionStyle(uncolored(prompt))}\n`);
     for (const [index, choice] of choices.entries()) {
       write(
         index === active
-          ? `${activeOn}> ${choice}${colorOff}\n`
-          : `  ${choice}\n`,
+          ? `${activePrefix} ${activeStyle(uncolored(choice))}\n`
+          : `  ${inactiveStyle(uncolored(choice))}\n`,
       );
     }
   };
@@ -340,9 +442,11 @@ export function createNodePrompts(options: NodePromptOptions = {}): PromptHost {
       defaultValue: string,
       initialText: string,
     ): Promise<string> {
-      // `asMessageEditor` only picks interact's colours, and there is
-      // nothing to colour here, so it is ignored. The editor is a single
-      // line on both sides — interact's `Input` is too.
+      // `asMessageEditor` only turns interact's edit buffer blue. readline
+      // redraws the buffer itself, so it keeps the terminal's colour and
+      // the flag is ignored. The question is yellow, as everywhere in gg.
+      // The editor is a single line on both sides — interact's `Input` is
+      // too.
       const terminal = isTerminal(input);
 
       // On a terminal the proposal goes into the buffer, exactly as
@@ -352,7 +456,7 @@ export function createNodePrompts(options: NodePromptOptions = {}): PromptHost {
       // answer keeps it.
       const suggestion = initialText !== '' ? initialText : defaultValue;
       const question = terminal
-        ? `${prompt} `
+        ? `${questionStyle(uncolored(prompt))} `
         : suggestion !== ''
           ? `${prompt} [${suggestion}]: `
           : `${prompt}: `;

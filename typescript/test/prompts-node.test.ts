@@ -12,6 +12,7 @@ import {
   askOnTerminal,
   chooseByArrows,
   createNodePrompts,
+  uncolored,
   UnansweredPromptError,
 } from '../prompts-node.js';
 
@@ -144,7 +145,32 @@ describe('createNodePrompts()', () => {
 
       expect(await picked).toBe(2);
       // The marker followed the keys rather than the digits being typed.
-      expect(written.join('')).toContain('> Major');
+      expect(written.join('')).toContain('❯\x1b[0m \x1b[34mMajor');
+    });
+
+    test('draws in gg\'s colours: question yellow, marked blue, rest white', async () => {
+      const tty = new FakeTty();
+      const written: string[] = [];
+
+      // gg may send colours of its own; the theme replaces them, the way
+      // native gg's prompt theme does, and keeps bold.
+      const picked = chooseByArrows(
+        tty,
+        (text) => written.push(text),
+        '\x1b[36mWhat should happen?\x1b[0m',
+        ['\x1b[33mMove\x1b[0m', 'Remove with \x1b[1m»gg do rm«\x1b[22m'],
+        0,
+      );
+      tty.press('\r');
+      await picked;
+
+      const drawn = written.join('');
+      expect(drawn).toContain('\x1b[33mWhat should happen?\x1b[0m\n');
+      expect(drawn).toContain('\x1b[90m❯\x1b[0m \x1b[34mMove\x1b[0m\n');
+      expect(drawn).toContain(
+        '  \x1b[37mRemove with \x1b[1m»gg do rm«\x1b[22m\x1b[0m\n',
+      );
+      expect(drawn).not.toContain('\x1b[36m');
     });
 
     test('goes back up again', async () => {
@@ -294,6 +320,24 @@ describe('createNodePrompts()', () => {
       expect(written.join('')).toContain('\x1b[4A');
     });
 
+    test('redraws a question of several lines in full', async () => {
+      const tty = new FakeTty();
+      const written: string[] = [];
+
+      const picked = chooseByArrows(
+        tty,
+        (text) => written.push(text),
+        '\nPick',
+        ['a', 'b', 'c'],
+        0,
+      );
+      tty.press('\x1b[B\r');
+      await picked;
+
+      // The blank line, the question and the three entries.
+      expect(written.join('')).toContain('\x1b[5A');
+    });
+
     test('is what the prompts use when stdin is a terminal', async () => {
       const tty = new FakeTty();
       const prompts = createNodePrompts({ input: tty, write: () => {} });
@@ -366,7 +410,7 @@ describe('createNodePrompts()', () => {
       );
       // Not a bracketed hint: the proposal is in the buffer, ready to be
       // changed, the way interact's editor has it.
-      expect(asked).toEqual([['Edit merge message: ', 'seed']]);
+      expect(asked).toEqual([['\x1b[33mEdit merge message:\x1b[0m ', 'seed']]);
     });
 
     test('means »none« when the user clears the buffer', async () => {
@@ -478,5 +522,58 @@ describe('createNodePrompts()', () => {
       // captures gg's output captures the prompt with it.
       expect(written.join('')).toContain('Message');
     });
+  });
+});
+
+// #############################################################################
+describe('uncolored()', () => {
+  test('removes foreground and background colours', () => {
+    expect(uncolored('\x1b[33ma\x1b[39m \x1b[41;97mb\x1b[49;39m')).toBe('a b');
+  });
+
+  test('removes 256 and true colours with their parameters', () => {
+    expect(uncolored('\x1b[38;5;208ma\x1b[48;2;1;2;3;1mb')).toBe(
+      'a\x1b[1mb',
+    );
+    expect(uncolored('\x1b[38:5:208ma')).toBe('a');
+  });
+
+  test('keeps bold, italic and underline', () => {
+    expect(uncolored('\x1b[1;34mcmd\x1b[22m')).toBe('\x1b[1mcmd\x1b[22m');
+    expect(uncolored('\x1b[3mi\x1b[23m \x1b[4mu\x1b[24m')).toBe(
+      '\x1b[3mi\x1b[23m \x1b[4mu\x1b[24m',
+    );
+  });
+
+  test('turns a reset into ending only what was switched on', () => {
+    // A plain reset would end the theme's colour, too.
+    expect(uncolored('\x1b[1;32mok\x1b[0m rest')).toBe(
+      '\x1b[1mok\x1b[22m rest',
+    );
+    expect(uncolored('\x1b[32mok\x1b[m rest')).toBe('ok rest');
+  });
+
+  test('forgets an attribute once it was ended', () => {
+    expect(uncolored('\x1b[4mu\x1b[24m\x1b[0m')).toBe('\x1b[4mu\x1b[24m');
+  });
+
+  test('removes bright colours and keeps codes it does not know', () => {
+    expect(uncolored('\x1b[93;103ma\x1b[53mb')).toBe('a\x1b[53mb');
+  });
+
+  test('keeps an extended colour it cannot read the length of', () => {
+    // Neither 5 nor 2: only the 38 goes, what follows is left as it is.
+    expect(uncolored('\x1b[38;9ma')).toBe('\x1b[9ma');
+  });
+
+  test('ends only the attribute that was ended', () => {
+    // Underline ended, bold still on — the reset ends bold alone.
+    expect(uncolored('\x1b[1;4ma\x1b[24mb\x1b[0m')).toBe(
+      '\x1b[1;4ma\x1b[24mb\x1b[22m',
+    );
+  });
+
+  test('leaves text without escape sequences alone', () => {
+    expect(uncolored('plain')).toBe('plain');
   });
 });

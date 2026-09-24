@@ -629,6 +629,30 @@ describe('createNodeHost()', () => {
       expect((await collect(started)).code).toBe(127);
     });
 
+    test('replays both streams to a listener that arrives late', () => {
+      // The real-process tests above depend on the child being quick
+      // enough; this one does not, so the buffering is always covered.
+      const child = Object.assign(new EventEmitter(), {
+        stdout: new EventEmitter(),
+        stderr: new EventEmitter(),
+      });
+      const started = new NodeStartedProcess(
+        child as unknown as ChildProcess,
+        false,
+      );
+
+      child.stdout.emit('data', Buffer.from('out'));
+      child.stderr.emit('data', Buffer.from('err'));
+
+      const out: string[] = [];
+      const err: string[] = [];
+      started.onStdout((chunk) => out.push(Buffer.from(chunk).toString()));
+      started.onStderr((chunk) => err.push(Buffer.from(chunk).toString()));
+
+      expect(out).toEqual(['out']);
+      expect(err).toEqual(['err']);
+    });
+
     test('keeps the first exit code when close and error both fire', () => {
       // A real child normally reports one terminal event. Node makes no
       // promise about that, so the wrapper guards against a second one
