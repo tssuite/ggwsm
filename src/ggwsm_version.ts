@@ -2,4 +2,4 @@
 // Kept in sync by test/ggwsm_version.test.ts.
 
 /** The version of the `@tssuite/ggwsm` package. */
-export const ggwsmVersion = '0.0.5';
+export const ggwsmVersion = '0.0.6';

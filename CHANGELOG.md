@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Prompts are drawn in gg's colour scheme, like native gg: the question
+  is yellow, the marked option blue behind a dark gray `❯`, every other
+  option white. Colours gg puts into a question or an option are
+  replaced, bold stays.
+- A question that starts with a blank line is redrawn in full when the
+  arrow keys move the marker, instead of leaving a stale line behind.
+- Picks up gg 17.4.2.
+
 ## 0.0.4 - 2026-08-20
 
 ### Fixed
