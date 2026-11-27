@@ -30,7 +30,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "sync-version": "dart run scripts/sync_version.dart",
@@ -53,8 +53,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "@tssuite/dna-tssuite": "^0.1.2",
-    "@tssuite/helix-js": "^0.3.0",
+    "@tssuite/dna-tssuite": "^1.0.1",
+    "@tssuite/helix-js": "^0.8.0",
     "@types/node": "^26.6.2",
     "@vitest/browser": "^5.0.1",
     "@vitest/browser-playwright": "^5.0.1",
