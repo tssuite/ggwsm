@@ -1,0 +1,37 @@
+# .gitignore
+# Dart
+.dart_tool/
+build/
+*.dart_tool
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+typescript/generated/
+coverage/
+
+# Playwright
+test-results/
+playwright-report/
+
+# OS / IDE
+.DS_Store
+*.log
+.gg/*
+!.gg/gg.json
+.gg/gg-publish.json
+.gg/pubspec_overrides_backup.yaml
+.gg/pnpm_workspace_backup.yaml
+.gg/publish_config.json
+.gg/publish_state.json
+
+# dna-readme
+/doc/guides/
+/doc/templates/
+/scripts/
+
+# dna-gg
+/CLAUDE.md

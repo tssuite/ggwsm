@@ -18,7 +18,7 @@ with.
 - 80 character rulers, no trailing whitespace, a final newline
 - Coverage gutters and the testing panel
 - A license header template for every language this family writes,
-  using `ggsuite` and `tssuite`
+  using `tssuite` and `tssuite`
 - `dna/_dna.json` is associated with `jsonc`, so its comments do not show
   as errors
 

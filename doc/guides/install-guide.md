@@ -22,7 +22,7 @@ Follow the guides in order. Pick the Node guide matching your operating system.
 
 - [Install Node on Mac](./install-guide/install-node-mac-guide.md)
 - [Install Node on Windows](./install-guide/install-node-win-guide.md)
-- [Install corepack and pnpm](./install-guide/install-corepack-guide.md)
+- [Install pnpm](./install-guide/install-pnpm-guide.md)
 
 ## Azure
 
