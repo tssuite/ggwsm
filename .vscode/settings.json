@@ -208,7 +208,7 @@
   // PSI Header
   // #############
 
-  "psi-header.variables": [["author", "ggsuite"]],
+  "psi-header.variables": [["author", "tssuite"]],
 
   "psi-header.templates": [
     {
@@ -267,6 +267,26 @@
     },
     {
       "language": "dart",
+      "template": [
+        "@license",
+        "Copyright (c) tssuite",
+        "",
+        "Use of this source code is governed by terms that can be",
+        "found in the LICENSE file in the root of this package."
+      ]
+    },
+    {
+      "language": "markdown",
+      "template": [
+        "@license",
+        "Copyright (c) tssuite",
+        "",
+        "Use of this source code is governed by terms that can be",
+        "found in the LICENSE file in the root of this package."
+      ]
+    },
+    {
+      "language": "md",
       "template": [
         "@license",
         "Copyright (c) tssuite",
